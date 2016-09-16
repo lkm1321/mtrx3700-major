@@ -1,0 +1,218 @@
+/************************************************************ 
+Copyright (C) 1995-2002 Pumpkin, Inc. and its
+Licensor(s). Freely distributable.
+
+$Source: C:\\RCS\\D\\salvo\040secrets\\doc\\release\\salvo-release.txt,v $
+$Author: aek $
+$Revision: 3.22 $
+$Date: 2003-10-16 19:57:57-07 $
+
+Release Notes for all Salvo distributions.
+
+************************************************************/
+
+IMPORTANT:
+
+    Make sure you refer to the Pumpkin website and User 
+Forums at http://www.pumpkininc.com for the latest information 
+on Salvo distributions and releases.
+
+    Always refer to the target-specific Release Notes
+for release information specific to the Salvo distribution(s)
+you are using.
+
+
+LOG:
+
+10/15/03 - 3.2.3
+
+	sem.c: fixed a typo that referenced u.noWaitReqd instead
+of u.avail. This caused problems (SB-18) when building with 
+OSBIG_SEMAPHORES set to TRUE.
+
+	sched.c: fixed a problem (SB-19) that resulted in 
+OSIdlingHook() running with interrupts disabled in certain
+distributions (primarily those that support a monitor
+function attribute / pragma / keyword).
+
+
+08/12/03 - 3.2.2-a
+
+    Installer: Added link to Salvo User Manual with 
+instructions and link on where to get it if the user has 
+not already downloaded it.
+        
+    
+07/23/03 - 3.2.2-dev7
+
+    All instances of #include "salvoXyz.h" except for
+#include "salvocfg.h" in the Salvo source file were changed
+to #include <salvoXyz.h>. 
+    
+    
+06/25/03 - 3.2.2-dev4
+
+    Target-specific header files are no longer included in
+the salvocfg.h's of Salvo tutorial and example projects. From
+this release forward, Salvo's configuration options should 
+only be defined in a project's salvocfg.h, and a project's
+salvocfg.h should only contain #define's of Salvo configuration
+options.
+    
+    
+06/25/03 - 3.2.2-dev0
+
+    For targets that have standardized means of clearing
+the watchdog timer, OSCLEAR_WATCHDOG_TIMER() has been moved
+from salvolib.h to the target's porting file. This way,
+the default (OSCLEAR_WATCHDOG_TIMER() is defined to clear
+the watchdog) results in all builds (Salvo Lite through
+Salvo Pro) clearing the watchdog timer in OSSched(). 
+Previously, Salvo Pro builds required OSCLEAR_WATCHDOG_TIMER()
+to be explicitly defined in salvocfg.h
+
+
+06/04/03 - 3.2.1-rc4
+
+    Makefiles have been upgraded so that when building a
+custom library, it is generated with a -clcN suffix. This
+makes it unnecessary for the user to first change the name
+of the existing library, etc.
+
+     Salvo for ICC11/430/AVR custom libraries are now copied
+to the default ICC library folder (c:\icc\lib). 
+
+
+05/26/03 - 3.2.1-rc1
+
+    Salvo installers now behave as follows: files that are
+shared among distributions (e.g. salvo.h) are only installed
+if the installer's file is newer than the one on the user's
+PC. Such files are made read-only to avoid unnecessary or
+inadvertent changes. Files that are unique to a distribution
+are always installed.
+
+
+04/12/03 - v3.2.0-rc4
+
+    First v3.2.0 release. 
+
+
+04/12/03 - v3.2.0-rc2
+
+    salvocfg.h's for ex1 now in new style for better readability.
+    
+    First release of Salvo for Atmel AVRs -- supports AVR
+and MegaAVR parts.
+
+    Revamped timer.c/OSTimer() heavily for cleaner code and
+a revised "lost ticks collector" that uses OSMAX_LOST_TICKS
+instead of OSCOLLECT_LOST_TICKS -- much, much nicer and faster
+because bitfields are no longer used.
+
+    Installers now organize documentation on a per-target
+basis.
+
+
+04/06/03 - v3.2.0-beta7
+
+    Tutorials 4 & 5 have switched over from 
+using (counting) semaphores to binary semaphores so that
+they can be built with Salvo tiny.
+
+
+04/03/03 - v3.2.0-beta7
+
+    "Lost tick collecting" has now been added
+to the timer and is enabled via OSCOLLECT_LOST_TICKS, default
+is TRUE (enabled). This feature solves the problem of ticks
+being "lost" when a task fails to yield to the scheduler 
+within 2 system ticks. The system can handle up to 255 lost 
+ticks between calls to OSSched(). Impact on ROM will vary --
+in a test with CS430 and the tu6pro project, ROM shrank by
+six bytes and RAM was unaffected. A typical scenario that
+this fixes over previous versions is a situation where one 
+task is taking a very long time to yield to the scheduler 
+(say, 5-10 system ticks), and therefore large task delays 
+(e.g. 20-30 system ticks) appear to "stretch". With 
+OSCOLLECT_LOST_TICKS set to TRUE, short-term jitter in the
+task delays would remain, but long-term, the task delays 
+ought to be to within +/- one system tick.
+
+
+04/02/03 - v3.2.0-beta6
+
+    Enhanced salvolib.h and Makefile system to
+greatly facilitate the generation and use of custom user
+libraries. Libraries chapter of User Manual also updated
+with example.
+
+    Makefile now supports target groups (e.g. msp430).
+    
+    salvo/src/intvl.c has been removed from the Pro 
+distributions.
+
+
+03/28/03 - v3.2.0-beta5
+
+    Pro now includes cyclic.c-cyclic7.c. Also,
+intvl.c (with OSInterval()) is now up-to-date, but will 
+likely be deleted from future releases as it evolved into 
+delay2.c. IOSInterval() is ** not ** included in any
+libraries.
+
+
+03/21/03 - v3.2.0-beta4
+
+    First release to include Reference Manuals
+in each installer.
+
+
+01/31/03 - v3.1.2
+
+    Added cyclic timers (cycTmr) to the API. Users can
+use cyclic timers in place of tasks that delay themselves
+repeatedly. One-shot and continuous cycTmrs are supported.
+
+
+
+01/09/03 - v3.1.1
+
+    A default (empty) OSIdlingHook() is now contained in all
+the libraries, as well as in salvo\src\idle.c. All included
+projects have been updated to reflect this change. Library-
+build projects need only define their own OSIdlingHook() if
+non-default behavior is desired.
+
+    First release of Salvo for TI's TMS320C2000 DSPs. 
+
+
+10/30/02 - v3.1.0-d
+
+    Starting with MSP430 projects, the salvocfg.h files have
+been changed to make it more transparent to the user as to
+which configuration options are used for which builds (e.g. 
+Lite, LE, Pro, etc.). For source-code builds, affected 
+projects must have MAKE_WITH_SOURCE defined.
+
+
+10/29/02 - v3.1.0-c
+
+    Pro distributions were missing msgq4.c -- now included.
+
+
+10/19/02 - v3.1.0
+
+    The Salvo type OStypeTS is now defined -- synonymous 
+with OStypeDelay.
+
+    New service: OSMsgQCount(). Returns the number of elements 
+in a message queue. Was added because the pointer arithmetic
+inside OSMsgQEmpty() is very expensive, cycle-wise, on targets
+where the data pointer size is larger than the native register
+size.
+
+    New multi-level installers (transparent to end-users).
+    
+
+    

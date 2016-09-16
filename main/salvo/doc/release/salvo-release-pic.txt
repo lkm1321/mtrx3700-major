@@ -1,0 +1,108 @@
+/************************************************************ 
+Copyright (C) 1995-2002 Pumpkin, Inc. and its
+Licensor(s). Freely distributable.
+
+$Source: C:\\RCS\\D\\salvo\040secrets\\doc\\release\\salvo-release-pic.txt,v $
+$Author: aek $
+$Revision: 3.11 $
+$Date: 2003-09-05 15:16:43-07 $
+
+Release Notes for Salvo for Microchip PICmicro(R) MCUs distributions.
+
+************************************************************/
+
+IMPORTANT:
+
+    Make sure you refer to the Pumpkin website and User 
+Forums at http://www.pumpkininc.com for the latest information 
+on Salvo distributions and releases.
+
+    Always refer to the Release Notes section of the latest
+Salvo User Manual for general release information. This file
+contains additional information specific to the Salvo for
+Microchip PICmicro(R) MCUs distributions. 
+
+
+LOG:
+
+8/12/03 - v3.2.2-a
+
+	Libraries have been built with PICC v8.02PL1 to resolve some
+issues with the interrupt_level #pragma, and to take advantage
+of PL1's fixes w/regard to bitfield accesses. ** All Salvo +
+PICC users should upgrade to PICC v8.02PL1. **
+
+    Installer: Uninstall log name was changed in order to avoid
+problems when automatically uninstalling a previous version. 
+Also, App Notes AN-25 and AN-26 have been added to the installer.
+    
+    
+7/19/03 - v3.2.2
+
+    MPLAB v6.30-compatible projects are now available for SYSA
+(PIC16 + HI-TECH PICC), SYSE (PIC18 + Microchip MPLAB-C18) and
+SYSF (PIC18 + HI-TECH PICC-18) Salvo test systems. MPLAB v5.50
+and greater projects remain in the distribution, but will not
+be further supported. MPLAB-ICD users must use MPLAB v5.50 and
+higher with Salvo test system SYSH.
+
+    We recommend all Microchip PICmicro(R) users upgrade to MPLAB 
+v6.30.
+
+    HPDPIC is no longer supported -- HPDPIC projects have been
+removed from the v3.2 distributions.
+
+
+5/20/03 - v3.2.0-b
+
+    Updated all MPLAB-C18 (syse) projects to apply -Opa- (disable
+procedural optimizations) to source files that contain Salvo 
+tasks. PA is incompatible with OSCtxSw().
+
+    Also updated all MPLAB-C18 (syse) projects to the "new" style
+of salvocfg.h configuration file.
+
+    Removed #include <stdarg.h> from portmcc.h because it's not
+supported in MPLAB-C18 v2.2.
+    
+    
+11/13/02
+
+    Added #include <stdarg.h> to portmcc.h to ensure va_arg stuff 
+is found ...
+    
+    
+10/23/02 - v3.1.0-b
+
+    Fixed the interrupt level for OSReturnsMsg() (the underlying 
+function for OSRead|TryMsg()) in 'a'-variant libraries. User would 
+encounter the error message: "function _OSReturnMsg appears in 
+multiple call graphs: rooted at intlevel0 and _main". This fix
+applies to all PICC and PICC-18 'a'-variant libraries that
+support events.
+
+
+10/22/02 - v3.1.0-a
+
+    All Salvo libraries for PICC-18 are now functional -- PICC-18
+v8.20PL2 is required.
+
+
+10/19/02 - v3.1.0
+    
+    New libraries for PICC-18 to cover all PIC18 PICmicro(R)
+MCUs with small/large memory model and 16-/24-bit code pointers.
+See Salvo User Manual for details. Currently small-model libs
+cause fixup error when linking -- problem with persistent variables?
+
+
+==============================================================
+                            Tools History
+                            
+Salvo/Date      Tool(s) Version(s)                            
+----------      ------------------------------
+v3.2.2          HI-TECH PICC v8.02 w/cpp.exe patch
+                HI-TECH PICC-18 v8.20PL4
+                IAR PIC18 C v2.10A
+                Microchip MPLAB-C18 v2.20
+

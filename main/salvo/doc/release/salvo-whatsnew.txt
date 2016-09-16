@@ -1,0 +1,110 @@
+/************************************************************ 
+Copyright (C) 1995-2002 Pumpkin, Inc. and its
+Licensor(s). Freely distributable.
+
+$Source: C:\\RCS\\D\\salvo\040secrets\\doc\\release\\salvo-whatsnew.txt,v $
+$Author: aek $
+$Revision: 3.5 $
+$Date: 2003-10-21 11:54:28-07 $
+
+What's New overview for all Salvo distributions.
+
+************************************************************/
+
+************************************************************
+**** v3.2.3 ************************************************
+
+** What's New in Salvo v3.2.3 (since v3.2.2)
+
+1. Bug fixes (SB-18 through SB-20).
+
+2. When doing a library build (e.g. with Salvo Lite), using 
+configuration options intended for source-code builds will
+generate an error message.
+
+
+************************************************************
+**** v3.2.2 ************************************************
+
+** What's New in Salvo v3.2.2 (since v3.2.1)
+
+1. Watchdog Timers: OSCLEAR_WATCHDOG_TIMER() is now defined
+in portXyz.h, so that it affects library and source-code builds,
+not just library builds.
+
+
+** Upgrading from Earlier Versions
+
+See v3.2.1, below.
+
+
+************************************************************
+**** v3.2.1 ************************************************
+
+** What's New in Salvo v3.2.1 (since v3.1.0)
+
+1. New and Integrated Documentation: Each Salvo distribution 
+now contains the Compiler Reference Manual and getting-started 
+Application Note(s) for the supported compiler(s).
+
+2. Multi-Distribution Capable Installers: Each Salvo distribution
+installs only the latest shared files (e.g. header files) so 
+that multiple, different distributions can coexist in the same 
+Salvo root directory. Shared files are made read-only to avoid
+inadvertent changes. Old version are uninstalled before new versions
+are installed.
+
+3. Custom Library Generation: The Salvo Pro facilities for 
+generating custom user libraries have been greatly enhanced. Salvo
+Pro users can now create unique header files for each custom
+library, and the resultant library will be automatically assigned
+a corresponding, unique name. See the Libraries chapter in the
+Salvo User Manual for more information.
+
+4. Timer Enhancements: "Lost tick collecting" has been added to
+the timer's functionality. This will improve long-term timing
+accuracy in those applications where the scheduler is called
+slower than once per system tick. This can happen if a task
+fails to yield to the scheduler for an unduly long period.
+
+5. Cyclic Timers: For functions (as opposed to tasks) that 
+need to be called on a periodic basis, cyclic timers are an
+ideal solution with lower overhead than delayed tasks.
+
+6. Improved Readability: All tutorial and example projects have
+revamped salvocfg.h files to make the appropriate configuration
+options clearer for the given distribution (e.g. Salvo Lite).
+
+7. Libraries and Salvo's mem Module: Salvo libraries are now built
+without the salvo\mem.c module. This forces every project to have
+salvo\mem.c as a node, and will therefore prevent run-time errors
+due to improper project configurations.
+
+8. Library Organization: Libraries are now located in subdirectories
+of the salvo\lib folder.
+
+9. Bug Fixes: OSIdlingHook() problem (SB-15) has been fixed. 
+Workarounds for compiler problems SB-16 and SB-17 are documented
+in the appropriate Salvo Compiler Reference Manuals. Event flags
+(see SB-14) have not yet been enhanced, and therefore SB-14's
+instructions must be followed. No other bugs are known.
+
+10. New Targets, Compilers, Distributions, etc.: Salvo for AVR and
+TMS320C2000 DSPs, Salvo tiny and SE, and more to come.
+
+
+
+** Upgrading from Earlier Versions
+
+Because of the new directory structure (for libraries), uninstall
+any earlier versions of Salvo before installing v3.2.1.
+
+When upgrading from earlier versions, 1) ensure that all library-
+build projects have salvo\mem.c as a project node, 2) re-locate
+the Salvo library used in each library-build project -- as of
+v3.2.1, it will be located in a subdirectory of salvo\lib, and 3)
+definitions of OSCLEAR_WATCHDOG_TIMER() in source-code (Salvo Pro)
+builds can be removed, since OSCLEAR_WATCHDOG_TIMER() is now defined
+in portXyz.h.
+
+************************************************************

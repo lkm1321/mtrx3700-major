@@ -1,0 +1,1495 @@
+###########################################################################################
+# The contents of this file are subject to the Pumpkin Salvo
+# License (the "License").  You may not use this file except
+# in compliance with the License. You may obtain a copy of
+# the License at http://www.pumpkininc.com, or from
+# warranty@pumpkininc.com.
+# 
+# Software distributed under the License is distributed on an
+# "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express
+# or implied. See the License for specific language governing
+# the warranty and the rights and limitations under the
+# License.
+# 
+# The Original Code is Salvo - the Cooperative, Multitasking
+# RTOS. Copyright (C) 1995-2001 Pumpkin, Inc. and its
+# Licensor(s). All Rights Reserved.
+# 
+# $Source: C:\\RCS\\d\\salvo\\src\\Makefile2,v $
+# $Author: aek $
+# $Revision: 3.61 $
+# $Date: 2003-09-05 15:16:42-07 $
+# 
+#   For use with \salvo\src\Makefile.
+# 
+#   Runs under Cygwin's bash shell, and presumably others, too. Created and tested
+# under GNU make 3.79.1.
+#
+#	The basic idea here is that for each type of library (i.e. simple multitasking,
+# etc.) there's a specific set of configuration options required. These are "enabled"
+# via defined symbols that are passed to the compiler, and are acted upon in salvolib.h.
+#
+# 	Each library type requires certain (but not all) salvo user services. However, each
+# library is compiled with all of the source code modules (less ones that are not
+# part of any freeware distribution). Therefore the linker reports many 
+#
+#	"modulexyz.obj defines no symbols (warning)" 
+#
+# warnings but that's OK.
+#
+#	For each target processor there's a specific library (due to precompiled issues
+# surrounding banking, etc.). The target processor specified for a given library is just
+# one of several possible target processors that have the same banking architecture.
+#
+#	To use the makefile, invoke it as below:
+#
+#		make -f Makefile2 target T=lib_type F=lib_family C=lib_configuration V=lib_variant 
+#
+# e.g.
+#
+#		make -f Makefile2 sfp412mb.lib T=OSF F=p412 C=OSM V=OSB
+#
+# 	This will create the sfp412mb.lib freeware library, for use with 16C773 and similar PICmicros, 
+# using salvo\include\salvolib.h, and placing the resultant library in salvo\library.
+#
+#
+
+###########################################################################################
+#
+#   Compiler options macro definitions. Those with '*' are hypothetical and/or special 
+# configurations of existing chips.
+#
+#   T:library type   F:processor family  C:library configuration  V:library variant
+#  MM:memory model  MT:memory type
+#
+#  F       = p200-series library:   12C508 PICmicro			HI-TECH PICC compiler
+#          = p210 					16C56					HI-TECH PICC compiler
+#          = p211 					12C509					HI-TECH PICC compiler
+#          = p212 					16C505					HI-TECH PICC compiler	
+#          = p222 					16C57					HI-TECH PICC compiler
+#          = p401					16C62					HI-TECH PICC compiler
+#          = p40a 					16C61					HI-TECH PICC compiler
+#          = p40b 					16C620A					HI-TECH PICC compiler
+#          = p40c 					16F627					HI-TECH PICC compiler
+#          = p411 					14000					HI-TECH PICC compiler
+#          = p412 					16F873					HI-TECH PICC compiler
+#          = p41b 					16C642					HI-TECH PICC compiler
+#          = p41c 					16C923					HI-TECH PICC compiler
+#          = p42c 					16F877					HI-TECH PICC compiler
+#          = p432*					16C99					HI-TECH PICC compiler
+#          = p43c*					16C99C					HI-TECH PICC compiler
+#          = p926 					16C926					HI-TECH PICC compiler
+#          = p700 					17C42					HI-TECH PICC compiler
+#          = p704 					17C43					HI-TECH PICC compiler
+#          = p710* 					17C42					HI-TECH PICC compiler
+#          = p714 					17C756					HI-TECH PICC compiler
+#          = p80s 					18C452					HI-TECH PICC-18 compiler
+#          = p80l 					18C452					HI-TECH PICC-18 compiler
+#          = p81s 					18C452					HI-TECH PICC-18 compiler
+#          = p81l 					18C452					HI-TECH PICC-18 compiler
+#          = p82s 					18F452					HI-TECH PICC-18 compiler
+#          = p82l 					18F452					HI-TECH PICC-18 compiler
+#          = p83s 					18F452					HI-TECH PICC-18 compiler
+#          = p83l 					18F452					HI-TECH PICC-18 compiler
+#          = cv8                    VAutomation V8-uRISC	HI-TECH V8C compiler
+#          = gccx86                 x86 family              GNU C compiler (gcc)
+#          = C18                    PIC18 family            Microchip MPLAB-C18 compiler
+#          = C51                    8051 and derivates      Keil C51 compiler
+#          = 51                     8051 and derivatives    HI-TECH C51 compiler
+#          = aq430                  TI MSP430               Archelon / Quadravox AQ430 C Compiler
+#          = cs430                  TI MSP430               Rowley Associates CroosWorks C Compiler
+#          = iar430                 TI MSP430               IAR MSP430 C Compiler
+#          = icc430                 TI MSP430               ImageCraft ICC430 C Compiler
+#          = icc11                  M68HC11                 ImageCraft ICC11 C Compiler
+#          = ez8                    Z8 Encore               Zilog ZDSII Z8 Encore C Compiler
+#		   = tic24x                 TMS320C24x              TI's Code Composer Studio (not yet supported)
+#		   = tic28x                 TMS320C28x              TI's Code Composer Studio
+#          = iccavr                 AVR                     ImageCraft ICCAVR C Compiler
+#          = iccatmega              MegaAVR                  ""
+#          = gccavr                 AVR and MegaAVR		    GCC AVR compiler (freeware)               
+#
+
+
+###########################################################################################
+#
+#   Object files
+#
+OBJS =array binsem binsem2 chk cyclic cyclic2 cyclic3 cyclic4 cyclic5 cyclic6 cyclic7 \
+debug delay delay2 delay3 destroy eflag eflag2 eid event idle init initecb inittask \
+inittcb msg msg2 msgq msgq2 msgq3 msgq4 prio prio2 qdel qins sched rpt sem \
+sem2 stop task task2 task3 task4 task5 task6 task7 task8 tick tid timer util
+
+
+###########################################################################################
+#
+#   Select compiler and necessary command-line arguments. 
+#   HI-TECH compilers expect "-C", though they seem to work with "-c", too.
+#   HI-TECH uses the same librarian for PICC, PICC-Lite, PICC-18 and V8C. Use the latest.
+#   Note that mplib has been placed in c:/mcc/bin. Normally it's in the MPLAB install directory.
+#
+#
+AQ-AQ430       =c:/Progra~1/AQ430/aq430.exe
+AQ-AQ430LIB    =c:/Progra~1/AQ430/aq430lib.exe
+CS-RCS         =c:/progra~1/compon~1/cs-rcs/system/csrcs.exe
+GCC-LIB        =ar
+GCC-6811       =d:/6811/m6811/bin/m6811-elf-gcc
+GCC-AVR        =c:/WinAVR/bin/avr-gcc.exe
+GCC-AVR-LIB    =c:/WinAVR/bin/avr-ar.exe
+GCC-AVR-LIBDIR =c:/WinAVR/lib
+HT-LIB         =c:/ht-pic/bin/libr.exe
+HT-C51         =c:/ht-8051/bin/c51.exe -q -$(CHIP)
+HT-PICC        =c:/ht-pic/bin/picc.exe -q -$(CHIP) 
+HT-PICC-18     =c:/htsoft/pic18/bin/picc18.exe -q -$(CHIP)
+HT-V8C         =c:/ht-v8/bin/cv8.exe -q
+IAR-ICCPIC18   =c:/iar/ew33/pic18/bin/iccpic18.exe --silent
+IAR-APIC18     =c:/iar/ew33/pic18/bin/apic18.exe --silent
+IAR-XLIBPIC18  =c:/iar/ew33/common/bin/xlib.exe
+IAR-ICC430-V1  =c:/iar/ew23/430/bin/icc430.exe -S
+IAR-A430-V1    =c:/iar/ew23/430/bin/a430.exe -S
+IAR-ICC430-V2  =c:/iar/ew32/430/bin/icc430.exe --silent
+IAR-A430-V2    =c:/iar/ew32/430/bin/a430.exe -S
+IAR-XLIB       =c:/iar/ew23/xlib.exe
+ICC-11         =c:/icc/bin/icc11w.exe
+ICC-430        =c:/icc/bin/icc430.exe
+ICC-AVR        =c:/icc/bin/iccavr.exe
+ICC-LIB        =c:/icc/bin/ilibw.exe
+ICC-LIBDIR     =c:/icc/lib
+KEIL-C51       =c:/keil/c51/bin/c51.exe
+KEIL-Cx51      =c:/keil/c51/bin/cx51.exe
+KEIL-LIB51     =c:/keil/c51/bin/lib51.exe
+KEIL-LIBx51    =c:/keil/c51/bin/libx51.exe
+MPLAB-C18      =c:/mcc18/bin/mcc18.exe -p=$(CHIP)
+MPLAB-C18-LIB  =c:/mcc18/bin/mplib.exe -q
+RA-CC430       =c:/Progra~1/Rowley~1/Crossw~1.1/bin/hcc.exe
+RA-AS430       =c:/Progra~1/Rowley~1/Crossw~1.1/bin/has.exe
+RA-AR430       =c:/Progra~1/Rowley~1/Crossw~1.1/bin/har.exe
+TI-C2800-CC    =c:/ti/c2000/cgtools/bin/cl2000.exe
+TI-C2800-ASM   =c:/ti/c2000/cgtools/bin/cl2000.exe
+TI-C2800-LIB   =c:/ti/c2000/cgtools/bin/ar2000.exe
+TI-C2400-CC    =c:/ti/c2400/cgtools/bin/dspcl.exe
+TI-C2400-ASM   =c:/ti/c2400/cgtools/bin/dspcl.exe
+TI-C2400-LIB   =c:/ti/c2400/cgtools/bin/dspar.exe
+ZLG-EZ8        =c:/Progra~1/zilog/ez8ide/bin/ez8cc.exe -define:OSCOMPILER=OSZDSII -define:OSTARGET=OSEZ8
+ZLG-EZ8ASM     =c:/Progra~1/zilog/ez8ide/bin/ez8asm.exe
+ZLG-EZ8LIB     =c:/Progra~1/zilog/ez8ide/bin/ez8lib.exe
+
+#
+# a shorthand is sometimes required because non-Win32 compilers are overwhelmed by overly long
+#  command lines ... 
+# LIBRARY-OPTS-A is the limit for HT's V8C and 8.1 filenames -- beyond that, you get "invalid argument"
+#  errors, etc.
+#
+LIBRARY-OPTS-A =-DOSMAKE_LIBRARY -DOSL_T=$(T) -DOSL_C=$(C) -DOSL_V=$(V) -DOSCLC=$(CLC)
+
+LIBRARY-OPTS-d  =-dOSMAKE_LIBRARY -dOSLIBRARY_TYPE=$(T) -dOSLIBRARY_GLOBALS=$(G) -dOSLIBRARY_CONFIG=$(C) -dOSLIBRARY_VARIANT=$(V) -dOSCUSTOM_LIBRARY_CONFIG=$(CLC)
+LIBRARY-OPTS-D  =-DOSMAKE_LIBRARY -DOSLIBRARY_TYPE=$(T) -DOSLIBRARY_GLOBALS=$(G) -DOSLIBRARY_CONFIG=$(C) -DOSLIBRARY_VARIANT=$(V) -DOSCUSTOM_LIBRARY_CONFIG=$(CLC)
+LIBRARY-OPTS-DF = DF\(OSMAKE_LIBRARY="1",OSLIBRARY_TYPE="$(T)",OSLIBRARY_GLOBALS="$(G)",OSLIBRARY_CONFIG="$(C)",OSLIBRARY_VARIANT="$(V)",OSCUSTOM_LIBRARY_CONFIG="$(CLC)"\)
+LIBRARY-OPTS-define =-define:OSMAKE_LIBRARY=1 -define:OSLIBRARY_TYPE=$(T) -define:OSLIBRARY_GLOBALS=$(G) -define:OSLIBRARY_CONFIG=$(C) -define:OSLIBRARY_VARIANT=$(V) -define:OSCUSTOM_LIBRARY_CONFIG=$(CLC)
+
+
+HT-OPTS-V8C    =$(LIBRARY-OPTS-A) -I$(INC) -O -Zg9 -W-9 -Ll -E+lib.err
+MPLAB-C18-OPTS =$(LIBRARY-OPTS-d) -i$(INC) -O+ -Ol- -Oa- -w2 -fe=lib.err 
+TI-C2800-OPTS  =$(LIBRARY-OPTS-d) -i$(INC)/ -ic:/ti/c2000/cgtools/include
+TI-C2400-OPTS  =$(LIBRARY-OPTS-d) -i$(INC)/ -ic:/ti/c2400/cgtools/include
+AQ-AQ430-OPTS  =$(LIBRARY-OPTS-D) -I$(INC)/ -Ic:/Progra~1/AQ430/include/
+GCC-OPTS       =$(LIBRARY-OPTS-D) -I$(INC) -O 
+GCC-AVR-OPTS   =$(LIBRARY-OPTS-D) -I$(INC)/ -c -Os
+HT-OPTS-8051C  =$(LIBRARY-OPTS-D) -I$(INC) -O -Zg9 -W-9 -Ll
+HT-OPTS-PICC   =$(LIBRARY-OPTS-D) -I$(INC) -O -Zg9 -W-9 -Ll -E+lib.err
+HT-OPTS-PICC-18=$(LIBRARY-OPTS-D) -I$(INC) -O -Zg9 -W-9 -Ll -E+lib.err
+IAR-430-V1-OPTS=$(LIBRARY-OPTS-D) -I$(INC)/ -Ic:/iar/ew23/430/inc/
+IAR-430-V2-OPTS=$(LIBRARY-OPTS-D) -I$(INC)/ -Ic:/iar/ew32/430/inc/ -Ic:/iar/ew32/430/inc/clib/
+IAR-PIC18-OPTS =$(LIBRARY-OPTS-D) -I$(INC)/ -Ic:/iar/ew33/pic18/inc/ -Ic:/iar/ew33/pic18/inc/clib/
+ICC-11-OPTS    =$(LIBRARY-OPTS-D) -I$(INC)/ -Ic:/icc/include/
+ICC-430-OPTS   =$(LIBRARY-OPTS-D) -I$(INC)/ -Ic:/icc/include/
+ICC-AVR-OPTS   =$(LIBRARY-OPTS-D) -I$(INC)/ -Ic:/icc/include/
+RA-CC430-OPTS  =$(LIBRARY-OPTS-D) -I$(INC)/ -Jc:/Progra~1/Rowley~1/Crossw~1.1/include/ 
+KEIL-C51-OPTS  =$(LIBRARY-OPTS-DF) ID\($(INC)\) OJ\($@\) OT\(9,SIZE\) DB 
+ZLG-EZ8-OPTS   =$(LIBRARY-OPTS-define) -usrinc:"$(DOS_INC)"
+
+OBJS_LIST      =$(addsuffix $(OBJ_SUFFIX), $(OBJS)) $(addsuffix $(OBJ_SUFFIX), $(EXTRA_OBJS))
+#
+# This solution to Keil's LIB51 requiring a comma-delimited list is cheesy with a capital C, as it
+#  seeks to avoid the "final comma" after the last file. Beware if making changes. "CS"="comma separated".
+#
+OBJS_LIST_CS   =$(addsuffix $(OBJ_SUFFIX2), $(OBJS)) $(addsuffix $(OBJ_SUFFIX), $(EXTRA_OBJS))
+
+INC            =../inc
+DOS_INC        =..\inc
+SRC            =../src
+DOS_SRC        =..\src
+LIB            =../lib
+DOS_LIB        =..\lib
+
+#
+# set LIB_FLY to 1 for building libraries on-the-fly (i.e. modules are added to library as
+#  they are compiled) ... compiler-dependent
+#
+LIB_FLY        =0
+
+
+#
+# if the user has specified a custom library config, build the library with the -clcN
+#  suffix in its name.
+#
+ifeq ($(CLC),0)
+  CLC_SUFFIX=
+else
+  CLC_SUFFIX=-clc$(CLC)
+endif
+
+
+###########################################################################################
+#
+#   F means family for library being generated
+#   Choose the appropriate compiler and example chip (if required) for the library
+# being generated
+#
+#
+#   All of the PIC family libraries for PICC are pretty easy, because there are no
+# memory models, and the default for OSLOC_ALL is bank1 (PIC12, PIC16, PIC17).
+#
+ifeq ($(F),p200)
+  CHIP      =12C508
+  CC        =$(HT-PICC)
+  CC_OPT1   =-c
+  CC_OPT2   =$<
+  CFLAGS    =$(HT-OPTS-PICC)
+  LIBDIR    =htpicc
+  LIBRARIAN =$(HT-LIB)
+  EXTRA_OBJS=
+  OBJ_SUFFIX=.obj
+  LIB_SUFFIX=.lib
+endif  
+
+ifeq ($(F),p210)
+  CHIP      =16C56
+  CC        =$(HT-PICC)
+  CC_OPT1   =-c
+  CC_OPT2   =$<
+  CFLAGS    =$(HT-OPTS-PICC)
+  LIBDIR    =htpicc
+  LIBRARIAN =$(HT-LIB)
+  EXTRA_OBJS=
+  OBJ_SUFFIX=.obj
+  LIB_SUFFIX=.lib
+endif  
+
+ifeq ($(F),p211)
+  CHIP      =12C509
+  CC        =$(HT-PICC)
+  CC_OPT1   =-c
+  CC_OPT2   =$<
+  CFLAGS    =$(HT-OPTS-PICC)
+  LIBDIR    =htpicc
+  LIBRARIAN =$(HT-LIB)
+  EXTRA_OBJS=
+  OBJ_SUFFIX=.obj
+  LIB_SUFFIX=.lib
+endif  
+
+ifeq ($(F),p212)
+  CHIP      =16C505
+  CC        =$(HT-PICC)
+  CC_OPT1   =-c
+  CC_OPT2   =$<
+  CFLAGS    =$(HT-OPTS-PICC)
+  LIBDIR    =htpicc
+  LIBRARIAN =$(HT-LIB)
+  EXTRA_OBJS=
+  OBJ_SUFFIX=.obj
+  LIB_SUFFIX=.lib
+endif  
+
+ifeq ($(F),p222)
+  CHIP      =16C57
+  CC        =$(HT-PICC)
+  CC_OPT1   =-c
+  CC_OPT2   =$<
+  CFLAGS    =$(HT-OPTS-PICC)
+  LIBDIR    =htpicc
+  LIBRARIAN =$(HT-LIB)
+  EXTRA_OBJS=
+  OBJ_SUFFIX=.obj
+  LIB_SUFFIX=.lib
+endif  
+
+ifeq ($(F),p401)
+  CHIP      =16C62
+  CC        =$(HT-PICC)
+  CC_OPT1   =-c
+  CC_OPT2   =$<
+  CFLAGS    =$(HT-OPTS-PICC)
+  LIBDIR    =htpicc
+  LIBRARIAN =$(HT-LIB)
+  EXTRA_OBJS=
+  OBJ_SUFFIX=.obj
+  LIB_SUFFIX=.lib
+endif  
+
+ifeq ($(F),p40a)
+  CHIP      =16C61
+  CC        =$(HT-PICC)
+  CC_OPT1   =-c
+  CC_OPT2   =$<
+  CFLAGS    =$(HT-OPTS-PICC)
+  LIBDIR    =htpicc
+  LIBRARIAN =$(HT-LIB)
+  EXTRA_OBJS=
+  OBJ_SUFFIX=.obj
+  LIB_SUFFIX=.lib
+endif  
+
+ifeq ($(F),p40b)
+  CHIP      =16C620A
+  CC        =$(HT-PICC)
+  CC_OPT1   =-c
+  CC_OPT2   =$<
+  CFLAGS    =$(HT-OPTS-PICC)
+  LIBDIR    =htpicc
+  LIBRARIAN =$(HT-LIB)
+  EXTRA_OBJS=
+  OBJ_SUFFIX=.obj
+  LIB_SUFFIX=.lib
+endif  
+
+ifeq ($(F),p40c)
+  CHIP      =16F627
+  CC        =$(HT-PICC)
+  CC_OPT1   =-c
+  CC_OPT2   =$<
+  CFLAGS    =$(HT-OPTS-PICC)
+  LIBDIR    =htpicc
+  LIBRARIAN =$(HT-LIB)
+  EXTRA_OBJS=
+  OBJ_SUFFIX=.obj
+  LIB_SUFFIX=.lib
+endif  
+
+ifeq ($(F),p411)
+  CHIP      =16C65
+  CC        =$(HT-PICC)
+  CC_OPT1   =-c
+  CC_OPT2   =$<
+  CFLAGS    =$(HT-OPTS-PICC)
+  LIBDIR    =htpicc
+  LIBRARIAN =$(HT-LIB)
+  EXTRA_OBJS=
+  OBJ_SUFFIX=.obj
+  LIB_SUFFIX=.lib
+endif  
+
+ifeq ($(F),p412)
+  CHIP      =16F873
+  CC        =$(HT-PICC)
+  CC_OPT1   =-c
+  CC_OPT2   =$<
+  CFLAGS    =$(HT-OPTS-PICC)
+  LIBDIR    =htpicc
+  LIBRARIAN =$(HT-LIB)
+  EXTRA_OBJS=
+  OBJ_SUFFIX=.obj
+  LIB_SUFFIX=.lib
+endif  
+
+ifeq ($(F),p41b)
+  CHIP      =16C642
+  CC        =$(HT-PICC)
+  CC_OPT1   =-c
+  CC_OPT2   =$<
+  CFLAGS    =$(HT-OPTS-PICC)
+  LIBDIR    =htpicc
+  LIBRARIAN =$(HT-LIB)
+  EXTRA_OBJS=
+  OBJ_SUFFIX=.obj
+  LIB_SUFFIX=.lib
+endif  
+
+ifeq ($(F),p41c)
+  CHIP      =16C923
+  CC        =$(HT-PICC)
+  CC_OPT1   =-c
+  CC_OPT2   =$<
+  CFLAGS    =$(HT-OPTS-PICC)
+  LIBDIR    =htpicc
+  LIBRARIAN =$(HT-LIB)
+  EXTRA_OBJS=
+  OBJ_SUFFIX=.obj
+  LIB_SUFFIX=.lib
+endif  
+
+ifeq ($(F),p42c)
+  CHIP      =16F877
+  CC        =$(HT-PICC)
+  CC_OPT1   =-c
+  CC_OPT2   =$<
+  CFLAGS    =$(HT-OPTS-PICC)
+  LIBDIR    =htpicc
+  LIBRARIAN =$(HT-LIB)
+  EXTRA_OBJS=
+  OBJ_SUFFIX=.obj
+  LIB_SUFFIX=.lib
+endif  
+
+ifeq ($(F),p432)
+  CHIP      =16C99
+  CC        =$(HT-PICC)
+  CC_OPT1   =-c
+  CC_OPT2   =$<
+  CFLAGS    =$(HT-OPTS-PICC)
+  LIBDIR    =htpicc
+  LIBRARIAN =$(HT-LIB)
+  EXTRA_OBJS=
+  OBJ_SUFFIX=.obj
+  LIB_SUFFIX=.lib
+endif  
+
+ifeq ($(F),p43c)
+  CHIP      =16C99C
+  CC        =$(HT-PICC)
+  CC_OPT1   =-c
+  CC_OPT2   =$<
+  CFLAGS    =$(HT-OPTS-PICC)
+  LIBDIR    =htpicc
+  LIBRARIAN =$(HT-LIB)
+  EXTRA_OBJS=
+  OBJ_SUFFIX=.obj
+  LIB_SUFFIX=.lib
+endif  
+
+ifeq ($(F),p926)
+  CHIP      =16C926
+  CC        =$(HT-PICC)
+  CC_OPT1   =-c
+  CC_OPT2   =$<
+  CFLAGS    =$(HT-OPTS-PICC)
+  LIBDIR    =htpicc
+  LIBRARIAN =$(HT-LIB)
+  EXTRA_OBJS=
+  OBJ_SUFFIX=.obj
+  LIB_SUFFIX=.lib
+endif  
+
+ifeq ($(F),p700)
+  CHIP      =17C42
+  CC        =$(HT-PICC)
+  CC_OPT1   =-c
+  CC_OPT2   =$<
+  CFLAGS    =$(HT-OPTS-PICC)
+  LIBDIR    =htpicc
+  LIBRARIAN =$(HT-LIB)
+  EXTRA_OBJS=
+  OBJ_SUFFIX=.obj
+  LIB_SUFFIX=.lib
+endif  
+
+ifeq ($(F),p704)
+  CHIP      =17C43
+  CC        =$(HT-PICC)
+  CC_OPT1   =-c
+  CC_OPT2   =$<
+  CFLAGS    =$(HT-OPTS-PICC)
+  LIBDIR    =htpicc
+  LIBRARIAN =$(HT-LIB)
+  EXTRA_OBJS=
+  OBJ_SUFFIX=.obj
+  LIB_SUFFIX=.lib
+endif  
+
+#
+# Since the resultant command line exceeds 128 chars, the -E+lib.err command-line
+#  argument must be left out for this particular case in order to get a successful
+#  compile.  When PICC goes Win32 in v8.0, -E+lib.err can be moved back up into
+#  HT-OPTS like PICC-18.
+#
+ifeq ($(F),p710)
+  CHIP      =17C42
+  CHIP     +=-ROM7000-7FFF
+  CC        =$(HT-PICC)
+  CC_OPT1   =-c
+  CC_OPT2   =$<
+  CFLAGS    =$(HT-OPTS-PICC)
+  LIBDIR    =htpicc
+  LIBRARIAN =$(HT-LIB)
+  EXTRA_OBJS=
+  OBJ_SUFFIX=.obj
+  LIB_SUFFIX=.lib
+endif  
+
+ifeq ($(F),p714)
+  CHIP      =17C756
+  CC        =$(HT-PICC)
+  CC_OPT1   =-c
+  CC_OPT2   =$<
+  CFLAGS    =$(HT-OPTS-PICC)
+  LIBDIR    =htpicc
+  LIBRARIAN =$(HT-LIB)
+  EXTRA_OBJS=
+  OBJ_SUFFIX=.obj
+  LIB_SUFFIX=.lib
+endif  
+
+#
+# PICC-18 has a different naming methodology ...
+#  80s: chips that don't support LFSR / small model / 16-bit pointers / no errata
+#  80l: chips that don't support LFSR / large model / 16-bit pointers / no errata
+#  81s: chips that don't support LFSR / small model / 24-bit pointers / no errata
+#  81l: chips that don't support LFSR / large model / 24-bit pointers / no errata
+#  82s: chips that do    support LFSR / small model / 16-bit pointers / no errata
+#  82l: chips that do    support LFSR / large model / 16-bit pointers / no errata
+#  83s: chips that do    support LFSR / small model / 24-bit pointers / no errata
+#  83l: chips that do    support LFSR / large model / 24-bit pointers / no errata
+#  86s: chips that do    support LFSR / small model / 16-bit pointers / errata changes
+#  86l: chips that do    support LFSR / large model / 16-bit pointers / errata changes
+#  87s: chips that do    support LFSR / small model / 24-bit pointers / errata changes
+#  87l: chips that do    support LFSR / large model / 24-bit pointers / errata changes
+#
+# Chips that don't support LSFR: 18C252, 18C452, 18C242 and 18C442
+# Chips that do    support LSFR: all other PIC18 PICmicro(R) MCUs
+#
+ifeq ($(F),p80s)
+  CHIP      =18C452
+  CC        =$(HT-PICC-18)
+  CC_OPT1   =-c -Bs -CP16
+  CC_OPT2   =$<
+  CFLAGS    =$(HT-OPTS-PICC-18)
+  LIBDIR    =htpicc18
+  LIBRARIAN =$(HT-LIB)
+  EXTRA_OBJS=
+  OBJ_SUFFIX=.obj
+  LIB_SUFFIX=.lib
+endif  
+
+ifeq ($(F),p80l)
+  CHIP      =18C452
+  CC        =$(HT-PICC-18)
+  CC_OPT1   =-c -Bl -CP16
+  CC_OPT2   =$<
+  CFLAGS    =$(HT-OPTS-PICC-18)
+  LIBDIR    =htpicc18
+  LIBRARIAN =$(HT-LIB)
+  EXTRA_OBJS=
+  OBJ_SUFFIX=.obj
+  LIB_SUFFIX=.lib
+endif  
+
+ifeq ($(F),p81s)
+  CHIP      =18C452
+  CC        =$(HT-PICC-18)
+  CC_OPT1   =-c -Bs -CP24
+  CC_OPT2   =$<
+  CFLAGS    =$(HT-OPTS-PICC-18)
+  LIBDIR    =htpicc18
+  LIBRARIAN =$(HT-LIB)
+  EXTRA_OBJS=
+  OBJ_SUFFIX=.obj
+  LIB_SUFFIX=.lib
+endif  
+
+ifeq ($(F),p81l)
+  CHIP      =18C452
+  CC        =$(HT-PICC-18)
+  CC_OPT1   =-c -Bl -CP24
+  CC_OPT2   =$<
+  CFLAGS    =$(HT-OPTS-PICC-18)
+  LIBDIR    =htpicc18
+  LIBRARIAN =$(HT-LIB)
+  EXTRA_OBJS=
+  OBJ_SUFFIX=.obj
+  LIB_SUFFIX=.lib
+endif  
+
+ifeq ($(F),p82s)
+  CHIP      =18F452
+  CC        =$(HT-PICC-18)
+  CC_OPT1   =-c -Bs -CP16 -noerrata
+  CC_OPT2   =$<
+  CFLAGS    =$(HT-OPTS-PICC-18)
+  LIBDIR    =htpicc18
+  LIBRARIAN =$(HT-LIB)
+  EXTRA_OBJS=
+  OBJ_SUFFIX=.obj
+  LIB_SUFFIX=.lib
+endif  
+
+ifeq ($(F),p82l)
+  CHIP      =18F452
+  CC        =$(HT-PICC-18)
+  CC_OPT1   =-c -Bl -CP16 -noerrata
+  CC_OPT2   =$<
+  CFLAGS    =$(HT-OPTS-PICC-18)
+  LIBDIR    =htpicc18
+  LIBRARIAN =$(HT-LIB)
+  EXTRA_OBJS=
+  OBJ_SUFFIX=.obj
+  LIB_SUFFIX=.lib
+endif  
+
+ifeq ($(F),p83s)
+  CHIP      =18F452
+  CC        =$(HT-PICC-18)
+  CC_OPT1   =-c -Bs -CP24 -noerrata
+  CC_OPT2   =$<
+  CFLAGS    =$(HT-OPTS-PICC-18)
+  LIBDIR    =htpicc18
+  LIBRARIAN =$(HT-LIB)
+  EXTRA_OBJS=
+  OBJ_SUFFIX=.obj
+  LIB_SUFFIX=.lib
+endif  
+
+ifeq ($(F),p83l)
+  CHIP      =18F452
+  CC        =$(HT-PICC-18)
+  CC_OPT1   =-c -Bl -CP24 -noerrata
+  CC_OPT2   =$<
+  CFLAGS    =$(HT-OPTS-PICC-18)
+  LIBDIR    =htpicc18
+  LIBRARIAN =$(HT-LIB)
+  EXTRA_OBJS=
+  OBJ_SUFFIX=.obj
+  LIB_SUFFIX=.lib
+endif  
+
+ifeq ($(F),p86s)
+  CHIP      =18F452
+  CC        =$(HT-PICC-18)
+  CC_OPT1   =-c -Bs -CP16
+  CC_OPT2   =$<
+  CFLAGS    =$(HT-OPTS-PICC-18)
+  LIBDIR    =htpicc18
+  LIBRARIAN =$(HT-LIB)
+  EXTRA_OBJS=
+  OBJ_SUFFIX=.obj
+  LIB_SUFFIX=.lib
+endif  
+
+ifeq ($(F),p86l)
+  CHIP      =18F452
+  CC        =$(HT-PICC-18)
+  CC_OPT1   =-c -Bl -CP16
+  CC_OPT2   =$<
+  CFLAGS    =$(HT-OPTS-PICC-18)
+  LIBDIR    =htpicc18
+  LIBRARIAN =$(HT-LIB)
+  EXTRA_OBJS=
+  OBJ_SUFFIX=.obj
+  LIB_SUFFIX=.lib
+endif  
+
+ifeq ($(F),p87s)
+  CHIP      =18F452
+  CC        =$(HT-PICC-18)
+  CC_OPT1   =-c -Bs -CP24
+  CC_OPT2   =$<
+  CFLAGS    =$(HT-OPTS-PICC-18)
+  LIBDIR    =htpicc18
+  LIBRARIAN =$(HT-LIB)
+  EXTRA_OBJS=
+  OBJ_SUFFIX=.obj
+  LIB_SUFFIX=.lib
+endif  
+
+ifeq ($(F),p87l)
+  CHIP      =18F452
+  CC        =$(HT-PICC-18)
+  CC_OPT1   =-c -Bl -CP24
+  CC_OPT2   =$<
+  CFLAGS    =$(HT-OPTS-PICC-18)
+  LIBDIR    =htpicc18
+  LIBRARIAN =$(HT-LIB)
+  EXTRA_OBJS=
+  OBJ_SUFFIX=.obj
+  LIB_SUFFIX=.lib
+endif  
+
+
+
+#
+#   V8C is just like PICC et. al.
+#
+ifeq ($(F),cv8)
+  CHIP      =
+  CC        =$(HT-V8C)
+  CC_OPT1   =-c
+  CC_OPT2   =$<
+  CFLAGS    =$(HT-OPTS-V8C)
+  LIBDIR    =htv8c
+  LIBRARIAN =$(HT-LIB)
+  EXTRA_OBJS=portv8c
+  OBJ_SUFFIX=.obj
+  LIB_SUFFIX=.lib
+  ASSEMBLER =$(HT-V8C)
+  AFLAGS    =-c $(HT-OPTS-V8C) 
+endif  
+
+
+#
+#   gcc for x86 is really easy
+#
+ifeq ($(F),gccx86)
+  CC_OPT1   =-c
+  CC_OPT2   =$<
+  CFLAGS    =$(GCC-OPTS)
+  CFLAGS   +=-DOSTARGET=OSIX86
+  LIBDIR    =gccx86
+  LIBRARIAN =$(GCC-LIB)
+  EXTRA_OBJS=
+  OBJ_SUFFIX=.o
+  LIB_SUFFIX=.a
+endif  
+
+
+#
+#   gcc for 6811 is like gcc for x86
+#
+ifeq ($(F),gcc6811)
+  CC        =$(GCC-6811)
+  CC_OPT1   =-c
+  CC_OPT2   =$<
+  CFLAGS    =$(GCC-OPTS)
+  CFLAGS   +=-DOSTARGET=OS6811
+  LIBDIR    =gcc6811
+  LIBRARIAN =$(GCC-LIB)
+  EXTRA_OBJS=
+  OBJ_SUFFIX=.o
+  LIB_SUFFIX=.a
+endif  
+
+#
+# GNU AVR-GCC C Compiler
+# From Colin O'Flynn
+#
+ifeq ($(F),gccavr)
+  CC        =$(GCC-AVR)
+  CC_OPT1   =-mmcu=at90s8515
+  CC_OPT2   = $<
+  CFLAGS    =$(GCC-AVR-OPTS) -funsigned-bitfields\
+             -fpack-struct -fshort-enums -Wall -Wstrict-prototypes
+  ASSEMBLER =$(GCC-AVR)
+  AFLAGS    =-c -x assembler-with-cpp
+  LIB_FLY   =1
+  LIB_NAME  =gccavr.a
+  LIBDIR	=gccavr
+  LIBRARIAN =$(GCC-AVR-LIB)
+  LIBFLAGS  =rvs $(LIB_NAME) $@
+  OBJ_SUFFIX=.o
+  LIB_SUFFIX=.a
+  
+  ifeq ($(O),OSI)
+    CC_OPT1 += -g
+    AFLAGS  += -Wa,-gstabs
+  endif
+  
+endif
+
+
+
+#
+#   IAR MSP430 is quite different from other compilers because of its librarians
+# capabilities.  Files are compiled and added to the library on-the-fly, as opposed to 
+# being compiled in one big block and then added en masse to a library.
+#   -b to build library module (instead of program module)
+#   -K and -C allow // and nested /* */-style comments
+#   -e allows for use of the monitor extended keyword (it's a language extension)
+#   -r adds debug information with source code in object modules. -re is an (undocumented)
+#     way of embedding the source code into the library
+#   -z optimizes for size (default is 3, range is 0-9)
+#   Note that -r makes library files huge (x20).
+#
+#
+ifeq ($(F),iar430)
+
+	ifeq ($(CVER),1)
+		CC        =$(IAR-ICC430-V1)
+		CC_OPT1   =-b -K -e -C -z
+		CFLAGS    =$(IAR-430-V1-OPTS)
+		ASSEMBLER =$(IAR-A430-V1)
+		LIBDIR    =iar430-v$(CVER)
+		
+		ifeq ($(O),OSI)
+		CC_OPT1 +=-re
+		AFLAGS  +=-re
+		endif
+ 	endif 
+  
+	ifeq ($(CVER),2)
+		CC        =$(IAR-ICC430-V2)
+		CC_OPT1   =--library_module -e -z
+		CFLAGS    =$(IAR-430-V2-OPTS)
+		ASSEMBLER =$(IAR-A430-V2)
+		LIBDIR    =iar430-v$(CVER)
+		
+		ifeq ($(O),OSI)
+		CC_OPT1 +=--debug
+		AFLAGS  +=-r
+		endif
+ 	endif 
+ 	
+	CC_OPT2   =$<
+	CFLAGS   +=-DOSTARGET=OSMSP430
+	AFLAGS    =-b
+	LIBRARIAN =$(IAR-XLIB)
+	LIB_NAME  =iar430.lib
+	OBJ_SUFFIX=.r43
+	LIB_SUFFIX=.r43
+  
+endif  
+
+
+#
+#   Archelon / Quadravox AQ430 C compiler. Object modules are generated and then
+# library is created in one fell swoop.
+#   +s to keep it silent except for errors
+#   -D__AQCOMPILER__ in order to be same as IDE and use intrinsic fns
+#   -link to suppress the linker (we're building for a library)
+#
+#
+ifeq ($(F),aq430)
+  CC        =$(AQ-AQ430)
+  CC_OPT1   =+s -D__AQCOMPILER__
+  CC_OPT2   =-link $<
+  CFLAGS    =$(AQ-AQ430-OPTS)
+  ASSEMBLER =$(AQ-AQ430)
+  AFLAGS    =+s -D__AQCOMPILER__ -link
+  LIBDIR    =aq430
+  LIBRARIAN =$(AQ-AQ430LIB)
+  OBJ_SUFFIX=.obj
+  LIB_SUFFIX=.lib
+  
+  ifeq ($(O),OSI)
+    CC_OPT1 +=+dbg
+    AFLAGS  +=asm=+coff
+  endif
+  
+endif  
+
+
+#
+#   Rowley Associates CrossWorks MSP430 C compiler. Object modules are generated and then
+# library is created in one fell swoop.
+#   +s to keep it silent except for errors
+#   -D__AQCOMPILER__ in order to be same as IDE and use intrinsic fns
+#   -link to suppress the linker (we're building for a library)
+#
+#
+ifeq ($(F),cs430)
+  CC        =$(RA-CC430)
+  CC_OPT1   =-D__CROSSWORKS -D__TARGET_PROCESSOR=MSP430F149 -D__CROSSWORKS_MSP430 -O
+  CC_OPT2   =-o $@ $<
+  CFLAGS    =$(RA-CC430-OPTS)
+  ASSEMBLER =$(RA-AS430)
+  AFLAGS    =$(RA-CC430-OPTS) -D__CROSSWORKS -D__TARGET_PROCESSOR=MSP430F149 -D__CROSSWORKS_MSP430 -o $@
+  LIBDIR    =cs430
+  LIBRARIAN =$(RA-AR430)
+  OBJ_SUFFIX=.hzo
+  LIB_SUFFIX=.hza
+  
+  ifeq ($(O),OSI)
+    CC_OPT1 +=-g
+    AFLAGS  +=-g
+  endif
+  
+endif  
+
+
+#
+#   ImageCraft ICC11 C compiler. Files are compiled and added to the library 
+# on-the-fly, as opposed to being compiled in one big block and then added 
+# en masse to a library. No need to explicitly define target.
+#   -e 
+#
+#
+ifeq ($(F),icc11)
+  CC        =$(ICC-11)
+  CC_OPT1   =-e -c
+  CC_OPT2   =$< 
+  CFLAGS    =$(ICC-11-OPTS)
+  ASSEMBLER =$(ICC-11)
+  AFLAGS    =-e -c  $(ICC-11-OPTS)
+  LIB_FLY   =1
+  LIB_NAME  =icc11.a
+  LIBDIR    =icc11
+  LIBRARIAN =$(ICC-LIB)
+  LIBFLAGS  =-a $(LIB_NAME) $@
+  OBJ_SUFFIX=.o
+  LIB_SUFFIX=.a
+  
+  ifeq ($(O),OSI)
+    CC_OPT1 +=-g
+    AFLAGS  +=-g
+  endif
+  
+endif  
+
+
+#
+#   ImageCraft ICC430 C compiler. Files are compiled and added to the library 
+# on-the-fly, as opposed to being compiled in one big block and then added 
+# en masse to a library. No need to explicitly define target.
+#   -e 
+#
+#
+ifeq ($(F),icc430)
+  CC        =$(ICC-430)
+  CC_OPT1   =-e -c
+  CC_OPT2   =$< 
+  CFLAGS    =$(ICC-430-OPTS)
+  ASSEMBLER =$(ICC-430)
+  AFLAGS    =-e -c  $(ICC-430-OPTS)
+  LIB_FLY   =1
+  LIB_NAME  =icc430.a
+  LIBDIR    =icc430
+  LIBRARIAN =$(ICC-LIB)
+  LIBFLAGS  =-a $(LIB_NAME) $@
+  OBJ_SUFFIX=.o
+  LIB_SUFFIX=.a
+  
+  ifeq ($(O),OSI)
+    CC_OPT1 +=-g
+    AFLAGS  +=-g
+  endif
+  
+endif  
+
+
+#
+#   ImageCraft ICCAVR C compiler. Essentially identical to ICC430.
+#   -Wf-r20_23 to NOT use R20..R23 (more generally applicable)
+#   -DATMEGA -Mavr_mega for atmega libraries
+#
+#	NOTE: Removed -Wf-r20_23 from CLFAGS and AFLAGS because of 
+#          problems found in at least one function (OSWaitEFlag())
+#
+ifeq ($(F),iccavr)
+  CC        =$(ICC-AVR)
+  CC_OPT1   =-e -c
+  CC_OPT2   =$< 
+  CFLAGS    =$(ICC-AVR-OPTS) 
+  ASSEMBLER =$(ICC-AVR)
+  AFLAGS    =-e -c  $(ICC-AVR-OPTS)
+  LIB_FLY   =1
+  LIB_NAME  =iccavr.a
+  LIBDIR    =iccavr
+  LIBRARIAN =$(ICC-LIB)
+  LIBFLAGS  =-a $(LIB_NAME) $@
+  OBJ_SUFFIX=.o
+  LIB_SUFFIX=.a
+  
+  ifeq ($(O),OSI)
+    CC_OPT1 +=-g
+    AFLAGS  +=-g
+  endif
+  
+endif  
+
+ifeq ($(F),iccatmega)
+  CC        =$(ICC-AVR)
+  CC_OPT1   =-e -c
+  CC_OPT2   =$< 
+  CFLAGS    =$(ICC-AVR-OPTS) -DATMEGA -Mavr_mega
+  ASSEMBLER =$(ICC-AVR)
+  AFLAGS    =-e -c  $(ICC-AVR-OPTS) -DATMEGA -Mavr_mega
+  LIB_FLY   =1
+  LIB_NAME  =iccatmega.a
+  LIBDIR    =iccavr
+  LIBRARIAN =$(ICC-LIB)
+  LIBFLAGS  =-a $(LIB_NAME) $@
+  OBJ_SUFFIX=.o
+  LIB_SUFFIX=.a
+  
+  ifeq ($(O),OSI)
+    CC_OPT1 +=-g
+    AFLAGS  +=-g
+  endif
+  
+endif  
+
+
+#
+#   Zilog ZDSII Z8 Encore C compiler. Files are compiled and added to the library 
+# on-the-fly, as opposed to being compiled in one big block and then added 
+# en masse to a library. 
+#   Flags taken directly from exported Makefile from a salvo test program.
+#
+ifeq ($(F),ez8)
+  CC        =$(ZLG-EZ8)
+  CC_OPT1   =-cpu:Z8F64  \
+             -alias -asm -const:RAM -debug -define:_Z8F64  \
+			 -NOexpmac -NOfplib -intrinsic -intsrc -NOkeepasm  \
+			 -NOkeeplst -NOlist -NOlistinc -maxerrs:50  -NOoptlink -promote  \
+			 -quiet -regvar -strict -NOwatch -optsize -localopt  \
+			 -localcse -localfold -localcopy -peephole -globalopt -globalcse  \
+			 -globalfold -globalcopy -loopopt -sdiopt -jmpopt  \
+			 -bitfieldsize:16 -charsize:8 -doublesize:32 -floatsize:32  \
+			 -intsize:16 -longsize:32 -shortsize:16
+  CC_OPT2   =$< 
+  CFLAGS    =$(ZLG-EZ8-OPTS)
+  ASSEMBLER =$(ZLG-EZ8ASM)
+  AFLAGS    =-debug -define:_Z8F64=1 -genobj -NOigcase -include:"$(DOS_INC)"  \
+			 -list -NOlistmac -name -pagelen:56 -pagewidth:80 -quiet -warn  \
+			 -NOzmasm
+  LIB_FLY   =1
+  LIB_NAME  =ez8.lib
+  LIBDIR    =z8encore
+  LIBRARIAN =$(ZLG-EZ8LIB)
+  LIBFLAGS  =$(LIB_NAME) =-+$@
+  OBJ_SUFFIX=.obj
+  LIB_SUFFIX=.lib
+    
+  ifeq ($(M),OSL)
+    CFLAGS +=-model:L
+  endif
+  ifeq ($(M),OSS)
+    CFLAGS +=-model:S
+  endif
+  
+endif  
+
+#
+#   TI TMS320C28x C/C++ compiler. 
+#   Flags taken directly from exported Makefile from a salvo test program.
+#
+ifeq ($(F),tic24x)
+  CC        =$(TI-C2400-CC)
+  CC_OPT1   =-q -o3 -v2xx
+  CC_OPT2   =$< 
+  CFLAGS    =$(TI-C2400-OPTS)
+  ASSEMBLER =$(TI-C2400-ASM)
+  AFLAGS    =$(CC_OPT1)
+  LIB_FLY   =0
+  LIB_NAME  =tic24x.lib
+  LIBDIR    =tic2000
+  LIBRARIAN =$(TI-C2400-LIB)
+  LIBFLAGS  =
+  OBJ_SUFFIX=.obj
+  LIB_SUFFIX=.lib
+    
+  ifeq ($(O),OSI)
+    CC_OPT1 +=-g
+  endif
+  
+endif  
+
+ifeq ($(F),tic28x)
+  CC        =$(TI-C2800-CC)
+  CC_OPT1   =-q -o3 -v28
+  CC_OPT2   =$< 
+  CFLAGS    =$(TI-C2800-OPTS)
+  ASSEMBLER =$(TI-C2800-ASM)
+  AFLAGS    =$(CC_OPT1)
+  LIB_FLY   =0
+  LIB_NAME  =tic28x.lib
+  LIBDIR    =tic2000
+  LIBRARIAN =$(TI-C2800-LIB)
+  LIBFLAGS  =
+  OBJ_SUFFIX=.obj
+  LIB_SUFFIX=.lib
+    
+  ifeq ($(O),OSI)
+    CC_OPT1 +=-g
+  endif
+  
+  ifeq ($(M),OSL)
+    CFLAGS +=-ml
+  endif
+  ifeq ($(M),OSS)
+  endif
+  
+endif  
+
+
+#
+#   C51 is a little more complicated, since memory model (compact, large or small)
+# and location of Salvo vars (data, idata or xdata) must be specified.
+#   Library's memory type handled through salvolib.h by $(G) symbol.
+#
+ifeq ($(F),c51)
+  CHIP      =
+  CC        =$(KEIL-C51)
+  CC_OPT1   =$<
+  CC_OPT2   =
+  CFLAGS    =$(KEIL-C51-OPTS) OE DF\(OSTARGET="OS8051"\)
+  
+  ifeq ($(M),OSC)
+    CFLAGS +=CP
+  endif
+  ifeq ($(M),OSL)
+    CFLAGS +=LA
+  endif
+  ifeq ($(M),OSS)
+    CFLAGS +=SM
+  endif
+
+  LIBDIR    =kc51
+  LIBRARIAN =$(KEIL-LIB51)
+  EXTRA_OBJS=port8051
+  OBJ_SUFFIX=.obj
+  OBJ_SUFFIX2=.obj,
+  LIB_SUFFIX=.lib
+endif  
+
+ifeq ($(F),cx51)
+  CHIP      =
+  CC        =$(KEIL-C51)
+  CC_OPT1   =$<
+  CC_OPT2   =
+  CFLAGS    =$(KEIL-C51-OPTS) OMF251 DF\(OSTARGET="OS8051"\)
+  
+  ifeq ($(M),OSC)
+    CFLAGS +=CP
+  endif
+  ifeq ($(M),OSL)
+    CFLAGS +=LA
+  endif
+  ifeq ($(M),OSS)
+    CFLAGS +=SM
+  endif
+
+  LIBDIR    =kc51
+  LIBRARIAN =$(KEIL-LIBx51)
+  EXTRA_OBJS=port8051
+  OBJ_SUFFIX=.obj
+  OBJ_SUFFIX2=.obj,
+  LIB_SUFFIX=.lib
+endif  
+
+
+#
+#   8051C has requirements almost identical to C51, but with different
+#  syntax.
+#
+ifeq ($(F),51)
+  CHIP      =8051
+  CC        =$(HT-C51)
+  CC_OPT1   =-c
+  CC_OPT2   =$<
+  CFLAGS    =$(HT-OPTS-8051C)
+  
+  ifeq ($(M),OSL)
+    CFLAGS +=-Bl
+  endif
+  ifeq ($(M),OSM)
+    CFLAGS +=-Bm
+  endif
+  ifeq ($(M),OSS)
+    CFLAGS +=-Bs
+  endif
+    
+  LIBDIR    =ht8051c
+  LIBRARIAN =$(HT-LIB)
+  EXTRA_OBJS=port8051
+  OBJ_SUFFIX=.obj
+  LIB_SUFFIX=.lib
+endif  
+
+
+
+#
+#   MPLAB-C18 is reasonably straightforward. Needs the memory model specified (-ml|s), the "generic"
+#  processor type / family of -p=18cxxx must be used. The few registers that Salvo uses (for interrupt
+#  and stack control and OSCtxSw()) are the same across the entire range, and so we #include p18c452.h
+#  in portmcc.h when OSMAKE_LIBRARY is TRUE.
+#   Library's memory type handled through salvolib.h by $(G) symbol.
+#
+ifeq ($(F),c18)
+  CHIP      =18cxx
+  CC        =$(MPLAB-C18)
+  CC_OPT1   =
+  CC_OPT2   =$<
+  CFLAGS    =$(MPLAB-C18-OPTS)
+    
+  ifeq ($(M),OSL)
+    CFLAGS +=-ml
+  endif
+  ifeq ($(M),OSS)
+    CFLAGS +=-ms
+  endif
+
+  LIBDIR    =mcc18
+  LIBRARIAN =$(MPLAB-C18-LIB)
+  EXTRA_OBJS=portpic18
+  OBJ_SUFFIX=.o
+  LIB_SUFFIX=.lib
+endif  
+
+
+#
+#   IAR PIC18CXXX is quite different from other compilers because of its librarians
+# capabilities.  Files are compiled and added to the library on-the-fly, as opposed to 
+# being compiled in one big block and then added en masse to a library.
+#   -b to build library module (instead of program module)
+#   -K and -C allow // and nested /* */-style comments
+#   -e allows for use of the monitor extended keyword (it's a language extension)
+#   -r adds debug information with source code in object modules. -re is an (undocumented)
+#     way of embedding the source code into the library
+#   -z optimizes for size (default is 3, range is 0-9)
+#   Note that -r makes library files huge (x20).
+#   Only large memory model is supported.
+#   Only stack model is supported.
+#
+#
+ifeq ($(F),iar18)
+  CC        =$(IAR-ICCPIC18)
+  CC_OPT1   =--library_module -e -z
+  CC_OPT2   =$<
+  CFLAGS    =$(IAR-PIC18-OPTS) --code_model=s
+  CFLAGS   +=-DOSTARGET=OSPIC18
+  ASSEMBLER =$(IAR-APIC18)
+  AFLAGS    =-b
+  LIBDIR    =iar18
+  LIBRARIAN =$(IAR-XLIBPIC18)
+  LIB_NAME  =iarpic18.r49
+  OBJ_SUFFIX=.r49
+  LIB_SUFFIX=.r49
+  EXTRA_OBJS=portpic18
+  
+  ifeq ($(O),OSI)
+    CFLAGS +=--debug
+  endif
+endif  
+
+
+
+
+###########################################################################################
+#
+#	All rules explicit.
+#
+.SUFFIXES:
+.SUFFIXES: .c .obj .o .hzo .asm .s .lib .hza .a .r43 .r49
+
+
+###########################################################################################
+#
+#   .c --> .obj and other dependency definitions. Like default implicit rule. User
+# can override by redfining CFLAGS on make's command line.
+#
+ifeq ($(LIB_FLY),0)
+%.obj %.o %.hzo: %.c $(INC)/salvo.h
+	$(CC) $(CC_OPT1) $(CPPFLAGS) $(CFLAGS) $(CC_OPT2)
+endif
+
+ifeq ($(LIB_FLY),1)
+%.obj %.o %.hzo: %.c $(INC)/salvo.h
+	$(CC) $(CC_OPT1) $(CPPFLAGS) $(CFLAGS) $(CC_OPT2)
+	$(LIBRARIAN) $(LIBFLAGS)
+endif
+
+	
+###########################################################################################
+#
+#   CS430
+#
+portcs430.hzo : portcs430.asm
+	$(ASSEMBLER) $(AFLAGS) portcs430.asm
+
+
+###########################################################################################
+#
+#   AQ430
+#
+portaq430.obj : portaq430.asm
+	$(ASSEMBLER) $(AFLAGS) portaq430.asm
+
+
+###########################################################################################
+#
+#   V8C
+#
+portv8c.obj : portv8c.as
+	$(ASSEMBLER) $(AFLAGS) portv8c.as
+
+
+###########################################################################################
+#
+#   GCCAVR
+#
+portgccavr.o : portgccavr.S
+	$(ASSEMBLER) $(AFLAGS) portgccavr.S
+
+
+###########################################################################################
+#
+#   ICC11
+#
+porticc11.o : porticc11.s
+	$(ASSEMBLER) $(AFLAGS) porticc11.s
+
+
+###########################################################################################
+#
+#   ICC430
+#
+porticc430.o : porticc430.s
+	$(ASSEMBLER) $(AFLAGS) porticc430.s
+
+
+###########################################################################################
+#
+#   ICCAVR
+#
+porticcavr.o : porticcavr.s
+	$(ASSEMBLER) $(AFLAGS) porticcavr.s
+
+
+porticcatmega.o : porticcatmega.s
+	$(ASSEMBLER) $(AFLAGS) porticcatmega.s
+
+
+###########################################################################################
+#
+#   EZ8
+#
+portez8.obj : portez8.asm
+	$(ASSEMBLER) $(AFLAGS) portez8.asm
+
+
+###########################################################################################
+#
+#   C24x
+#
+porttic24x.obj : porttic24x.asm
+	$(ASSEMBLER) $(AFLAGS) porttic24x.asm
+
+
+###########################################################################################
+#
+#   C28x
+#
+porttic28x.obj : porttic28x.asm
+	$(ASSEMBLER) $(AFLAGS) porttic28x.asm
+
+
+###########################################################################################
+#
+#   IAR librarian is quite different from others in that one cannot add multiple files
+# to a library at once. Therefore we have to compile the module, then append the module
+# to the eventual library module.
+#
+portiar430.r43 : portiar430.s43
+	$(ASSEMBLER) $(AFLAGS) portiar430.s43
+
+
+%.r43 %.r49 : %.c $(INC)/salvo.h
+	$(CC) $(CC_OPT1) $(CPPFLAGS) $(CFLAGS) $(CC_OPT2)
+	$(LIBRARIAN) -c "FETCH-MODULES $@ $(LIB_NAME)"
+
+
+###########################################################################################
+#
+#   remove existing object files. This must be done because one compile differs from
+# the next only by the command-line parameters passed to the compiler.
+#
+rmobjs:	
+	@rm -f *.obj *.OBJ *.o *.O *.hzo *.r43 *.r49
+
+
+###########################################################################################
+#
+#   remove existing library file. While one could argue that it's OK to simply
+# replace modules in the library, by removing it altogether and rebuilding it from
+# scratch we can be sure that all its modules are current.
+#
+rmlib:
+	@rm -f $(LIB)/$@
+
+    
+###########################################################################################
+#
+#   targets: libraries
+#
+include targets.mk
+
+
+###########################################################################################
+#
+# Full file name (with path and optional CLC suffix) of library file being built.
+#
+LIB_FILE=$(LIB)/$(LIBDIR)/$*$(CLC_SUFFIX)$(LIB_SUFFIX)
+
+
+###########################################################################################
+#
+#   targets: the freeware and standard libraries:
+#
+$(HT_PICC_p2xx_LIBRARIES) \
+$(HT_PICC_p4xx_LIBRARIES) \
+$(HT_PICC_p7xx_LIBRARIES) \
+$(HT_PICC_p8xx_LIBRARIES) \
+$(HT_V8C_cv8_LIBRARIES)   \
+$(HT_C51_LIBRARIES)       \
+$(GCC_x86_LIBRARIES)      \
+$(GCC_6811_LIBRARIES) : rmobjs rmlib $(OBJS_LIST)
+	$(LIBRARIAN) r $(LIB_FILE) $(OBJS_LIST)
+	@ls -al $(LIB_FILE)
+		
+$(KEIL_C51_LIBRARIES) \
+$(KEIL_Cx51_LIBRARIES) : rmobjs rmlib $(OBJS_LIST)
+	$(LIBRARIAN) TRANSFER $(OBJS_LIST_CS) TO $(LIB_FILE) 
+	@ls -al $(LIB_FILE)
+		
+$(GCC_AVR_LIBRARIES) : rmobjs rmlib $(OBJS_LIST) portgccavr.o
+	$(LIBRARIAN) rvs $(LIB_NAME) portgccavr.o
+	@mv $(LIB_NAME) $(LIB_FILE)
+	@ls -al $(LIB_FILE)
+		
+$(ICC_11_LIBRARIES) : rmobjs rmlib $(OBJS_LIST) porticc11.o
+	$(LIBRARIAN) -a $(LIB_NAME) porticc11.o
+	@mv $(LIB_NAME) $(LIB_FILE)
+	@cp $(LIB_FILE) $(ICC-LIBDIR)
+	@ls -al $(LIB_FILE)
+		
+$(ICC_430_LIBRARIES) : rmobjs rmlib $(OBJS_LIST) porticc430.o
+	$(LIBRARIAN) -a $(LIB_NAME) porticc430.o
+	@mv $(LIB_NAME) $(LIB_FILE)
+	@cp $(LIB_FILE) $(ICC-LIBDIR)
+	@ls -al $(LIB_FILE)
+	
+$(ICC_AVR_LIBRARIES) : rmobjs rmlib $(OBJS_LIST) porticcavr.o
+	$(LIBRARIAN) -a $(LIB_NAME) porticcavr.o
+	@mv $(LIB_NAME) $(LIB_FILE)
+	@cp $(LIB_FILE) $(ICC-LIBDIR)
+	@ls -al $(LIB_FILE)
+	
+$(ICC_ATMEGA_LIBRARIES) : rmobjs rmlib $(OBJS_LIST) porticcatmega.o
+	$(LIBRARIAN) -a $(LIB_NAME) porticcatmega.o
+	@mv $(LIB_NAME) $(LIB_FILE)
+	@cp $(LIB_FILE) $(ICC-LIBDIR)
+	@ls -al $(LIB_FILE)
+		
+$(CS_430_LIBRARIES) : rmobjs rmlib $(OBJS_LIST) portcs430.hzo
+	$(LIBRARIAN) -c $(LIB_FILE) $(OBJS_LIST) portcs430.hzo
+	@ls -al $(LIB_FILE)
+
+$(AQ_430_LIBRARIES) : rmobjs rmlib $(OBJS_LIST) portaq430.obj
+	$(LIBRARIAN) +s +clear l=$(LIB_FILE) $(OBJS_LIST) portaq430.obj
+	@ls -al $(LIB_FILE)
+		
+$(IAR_430_LIBRARIES) : rmobjs rmlib $(OBJS_LIST) portiar430.r43
+	$(LIBRARIAN) -c "FETCH-MODULES portiar430.r43 $(LIB_NAME)"
+	@mv $(LIB_NAME) $(LIB_FILE)
+	@ls -al $(LIB_FILE)
+		
+$(IAR_PIC18_LIBRARIES) : rmobjs rmlib $(OBJS_LIST)
+	@mv $(LIB_NAME) $(LIB_FILE)
+	@ls -al $(LIB_FILE)
+		
+$(MPLAB_C18_LIBRARIES) : rmobjs rmlib $(OBJS_LIST)
+	$(LIBRARIAN) /c $(LIB_FILE)
+	$(LIBRARIAN) /r $(LIB_FILE) $(OBJS_LIST)
+	@ls -al $(LIB_FILE)
+
+$(TI_C2400_LIBRARIES) : rmobjs rmlib $(OBJS_LIST) porttic24x.obj
+	$(LIBRARIAN) -rq $(LIB_FILE) $(OBJS_LIST) porttic24x.obj
+	@ls -al $(LIB_FILE)
+		
+$(TI_C2800_LIBRARIES) : rmobjs rmlib $(OBJS_LIST) porttic28x.obj
+	$(LIBRARIAN) -rq $(LIB_FILE) $(OBJS_LIST) porttic28x.obj
+	@ls -al $(LIB_FILE)
+		
+$(ZLG_EZ8_LIBRARIES) : rmobjs rmlib $(OBJS_LIST) portez8.obj
+	$(LIBRARIAN) $(LIB_NAME) =-+portez8.obj
+	@mv $(LIB_NAME) $(LIB_FILE)
+	@ls -al $(LIB_FILE)
+		

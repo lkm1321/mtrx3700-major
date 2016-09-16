@@ -1,0 +1,16 @@
+call makegccx86.bat
+call makeiccavr.bat
+call makeicc11.bat
+call makeaq430.bat
+call makecs430.bat
+call makeiar430.bat
+call makeicc430.bat
+call makep2xx.bat
+call makep4xx.bat
+call makep7xx.bat
+call makep8xx.bat
+call makeiar18.bat
+call makec18.bat
+call makecv8.bat
+call maketic24x.bat
+call maketic28x.bat
