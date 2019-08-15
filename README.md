@@ -1,17 +1,13 @@
 <snippet>
   <content>
-# MTRX3700 - Team Archibald
+
+## NOTHING TO FIND HERE
+
+This repository has been stripped now. Some part of it (how-to-git.txt, setting up Salvo RTOS) are left for future students. 
+
+## MTRX3700 - Team Archibald
 
 Track an RF-screeching parrot (strangely in ASCII 'e') with a robot. 
-
-## To do
-
-TODO: SW defined serial. <br />
-TODO: XBee API Mode driver. <br />
-TODO: Joystick. <br />
-TODO: Hardware for controller. <br />
-TODO: FSM for main.c into a separate file. <br />
-TODO: PID for motors <br />
 
 ## New to git? 
 
