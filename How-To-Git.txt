@@ -1,0 +1,15 @@
+0. To clone this onto your computer 
+
+git clone https://github.com/lkm1321/mtrx3700-major
+
+1. When you first start coding: 
+
+git pull origin master
+
+2. Once you're done / want to save your changes
+
+git add --all
+
+git commit -m "What did you do?" 
+
+git push origin master
